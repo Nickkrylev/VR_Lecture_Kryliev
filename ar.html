@@ -65,24 +65,49 @@
     <div class="overlay">
         <div class="panel">
             <h1>Sievert Surface AR</h1>
-            <p>Open this page on the phone and point the camera at the printed marker image from the AR.js generator.</p>
+            <p>Open this page on the phone in Safari. This scene supports both the standard Hiro marker and your custom pattern marker.</p>
             <p>Marker template: <a href="./assets/vr-surface-marker-template.svg" target="_blank" rel="noreferrer">open printable SVG</a></p>
             <p>Pattern file in use: <code>assets/vr-surface-marker.patt</code></p>
-            <p>Quick tracking test: <a href="?marker=hiro" rel="noreferrer">open Hiro test mode</a></p>
+            <p>Hiro test image: <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noreferrer">open Hiro marker</a></p>
             <p>Do not print the source SVG directly. Upload the SVG to the AR.js marker generator, then print the marker image that generator downloads.</p>
-            <p id="marker-status">Marker status: waiting for camera</p>
+            <p id="marker-status">Marker status: loading scene</p>
             <p id="camera-debug"></p>
             <p id="marker-debug"></p>
         </div>
     </div>
 
     <a-scene
+        id="ar-scene"
         embedded
-        renderer="antialias: true; colorManagement: true;"
+        renderer="antialias: true; colorManagement: true; logarithmicDepthBuffer: true;"
         vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
     >
         <a-assets></a-assets>
+
+        <a-marker
+            id="hiro-marker"
+            preset="hiro"
+            smooth="true"
+            smooth-count="8"
+            smooth-tolerance="0.01"
+            smooth-threshold="2"
+        >
+            <a-box
+                color="#ff5a5f"
+                depth="0.4"
+                height="0.4"
+                position="0 0.25 0"
+                width="0.4"
+            ></a-box>
+            <a-text
+                align="center"
+                color="#ffffff"
+                position="0 0.65 0"
+                scale="0.8 0.8 0.8"
+                value="HIRO OK"
+            ></a-text>
+        </a-marker>
 
         <a-marker
             id="surface-marker"
@@ -94,11 +119,19 @@
             smooth-threshold="2"
             size="0.16"
         >
+            <a-box
+                color="#2dd4bf"
+                depth="0.22"
+                height="0.22"
+                opacity="0.5"
+                position="0 0.12 0"
+                width="0.22"
+            ></a-box>
             <a-entity
                 sievert-surface
-                position="0 0.03 0"
+                position="0 0.18 0"
                 rotation="-90 0 0"
-                scale="0.035 0.035 0.035"
+                scale="0.05 0.05 0.05"
             ></a-entity>
 
             <a-entity light="type: ambient; intensity: 0.8; color: #ffffff"></a-entity>
@@ -118,24 +151,41 @@
 
     <script>
         (function() {
-            let marker = document.getElementById('surface-marker');
+            let scene = document.getElementById('ar-scene');
+            let hiroMarker = document.getElementById('hiro-marker');
+            let surfaceMarker = document.getElementById('surface-marker');
             let status = document.getElementById('marker-status');
             let debug = document.getElementById('camera-debug');
             let markerDebug = document.getElementById('marker-debug');
-            let params = new URLSearchParams(window.location.search);
-            let markerMode = params.get('marker');
+            let activeMarkers = new Set();
 
             function setDebugMessage(message) {
                 debug.textContent = message;
             }
 
-            if (markerMode === 'hiro') {
-                marker.removeAttribute('type');
-                marker.removeAttribute('url');
-                marker.setAttribute('preset', 'hiro');
-                markerDebug.textContent = 'Marker mode: Hiro preset. Use the standard Hiro marker for tracking verification.';
-            } else {
-                markerDebug.textContent = 'Marker mode: custom pattern. This requires the printed marker image generated from the same SVG as assets/vr-surface-marker.patt.';
+            function setMarkerStatus(message) {
+                status.textContent = message;
+            }
+
+            function refreshMarkerStatus() {
+                if (activeMarkers.size === 0) {
+                    setMarkerStatus('Marker status: camera ready, scanning for Hiro or custom marker');
+                    return;
+                }
+
+                if (activeMarkers.has('hiro') && activeMarkers.has('custom')) {
+                    setMarkerStatus('Marker status: Hiro and custom pattern detected');
+                    return;
+                }
+
+                if (activeMarkers.has('hiro')) {
+                    setMarkerStatus('Marker status: Hiro marker detected');
+                    return;
+                }
+
+                if (activeMarkers.has('custom')) {
+                    setMarkerStatus('Marker status: custom pattern detected');
+                }
             }
 
             if (!window.isSecureContext) {
@@ -143,19 +193,41 @@
             } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setDebugMessage('Camera API is unavailable in this browser context. Open the page directly in Safari, not inside Telegram or another in-app browser.');
             } else {
-                setDebugMessage('If the marker stays lost, the camera is working and the next issue is tracking, not permissions.');
+                setDebugMessage('If no marker is detected, try the Hiro marker first. If Hiro works and custom does not, the issue is your generated pattern marker.');
             }
 
-            marker.addEventListener('markerFound', function() {
-                status.textContent = 'Marker status: found';
+            markerDebug.textContent = 'Supported markers: Hiro preset and custom pattern from assets/vr-surface-marker.patt.';
+
+            scene.addEventListener('loaded', function() {
+                setMarkerStatus('Marker status: scene loaded, waiting for camera');
             });
 
-            marker.addEventListener('markerLost', function() {
-                status.textContent = 'Marker status: lost';
+            window.addEventListener('camera-init', function() {
+                setMarkerStatus('Marker status: camera ready, scanning for Hiro or custom marker');
+            });
+
+            hiroMarker.addEventListener('markerFound', function() {
+                activeMarkers.add('hiro');
+                refreshMarkerStatus();
+            });
+
+            hiroMarker.addEventListener('markerLost', function() {
+                activeMarkers.delete('hiro');
+                refreshMarkerStatus();
+            });
+
+            surfaceMarker.addEventListener('markerFound', function() {
+                activeMarkers.add('custom');
+                refreshMarkerStatus();
+            });
+
+            surfaceMarker.addEventListener('markerLost', function() {
+                activeMarkers.delete('custom');
+                refreshMarkerStatus();
             });
 
             window.addEventListener('camera-error', function(event) {
-                status.textContent = 'Marker status: camera permission failed';
+                setMarkerStatus('Marker status: camera permission failed');
                 let detail = event && event.detail && event.detail.error ? String(event.detail.error) : '';
                 if (detail) {
                     setDebugMessage('Camera error: ' + detail);
