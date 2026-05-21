@@ -30,11 +30,28 @@ function Model(name) {
     this.iTexCoordsBuffer = gl.createBuffer();
     this.iIndexBuffer = gl.createBuffer();
     this.count = 0;
+    this.center = [0, 0, 0];
 
     // Identifier of a diffuse texture
     this.idTextureDiffuse  = -1;
 
     this.BufferData = function(vertices, indices, texCoords) {
+        let vertexCount = vertices.length / 3;
+        let center = [0, 0, 0];
+
+        for (let i = 0; i < vertices.length; i += 3) {
+            center[0] += vertices[i + 0];
+            center[1] += vertices[i + 1];
+            center[2] += vertices[i + 2];
+        }
+
+        if (vertexCount > 0) {
+            center[0] /= vertexCount;
+            center[1] /= vertexCount;
+            center[2] /= vertexCount;
+        }
+
+        this.center = center;
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);

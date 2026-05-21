@@ -2,10 +2,121 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 
-<title>PA#1</title>
+<title>Anaglyph Stereo Model</title>
 <style>
+    * {
+        box-sizing: border-box;
+    }
+
     body {
-        background-color: #EEEEEE;
+        margin: 0;
+        background: #edf0f2;
+        color: #16212a;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    main {
+        min-height: 100vh;
+        padding: 28px;
+    }
+
+    h1 {
+        font-size: 1.45rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        margin: 0 0 20px;
+    }
+
+    .workspace {
+        display: grid;
+        gap: 22px;
+        grid-template-columns: minmax(280px, 1fr) 280px;
+        align-items: start;
+        max-width: 1180px;
+    }
+
+    #canvas-holder {
+        min-width: 0;
+    }
+
+    canvas {
+        aspect-ratio: 4 / 3;
+        background: #000;
+        cursor: grab;
+        display: block;
+        height: auto;
+        max-height: calc(100vh - 110px);
+        touch-action: none;
+        width: 100%;
+    }
+
+    canvas:active {
+        cursor: grabbing;
+    }
+
+    .controls {
+        border-left: 1px solid #c3cdd5;
+        display: grid;
+        gap: 18px;
+        padding-left: 22px;
+    }
+
+    .control {
+        display: grid;
+        gap: 8px;
+    }
+
+    .control-row {
+        align-items: baseline;
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+    }
+
+    label {
+        font-size: 0.92rem;
+        font-weight: 600;
+    }
+
+    output,
+    #camera-status {
+        color: #40515d;
+        font-size: 0.88rem;
+    }
+
+    input[type="range"] {
+        accent-color: #c43d3d;
+        margin: 0;
+        width: 100%;
+    }
+
+    #camera-status {
+        border-top: 1px solid #c3cdd5;
+        line-height: 1.4;
+        margin: 4px 0 0;
+        min-height: 2.5em;
+        padding-top: 16px;
+    }
+
+    @media (max-width: 760px) {
+        main {
+            padding: 18px;
+        }
+
+        .workspace {
+            grid-template-columns: 1fr;
+        }
+
+        canvas {
+            max-height: none;
+        }
+
+        .controls {
+            border-left: 0;
+            border-top: 1px solid #c3cdd5;
+            padding-left: 0;
+            padding-top: 18px;
+        }
     }
 </style>
 
@@ -19,16 +130,43 @@
 
 </head>
 <body onload="init()">
-
-<h2>A Cube with "Trackball" Mouse Rotation</h2>
-
-<p id="message">Drag your mouse on the cube to rotate it.<br>
-(On a touch screen, you can use your finger.)</p>
-
-
-<div id="canvas-holder">
-   <canvas width="600" height="600" id="webglcanvas" style="background-color:red"></canvas>
-</div>
-
-
+<main>
+   <h1>Anaglyph Stereo Model</h1>
+   <section class="workspace">
+      <div id="canvas-holder">
+         <canvas width="960" height="720" id="webglcanvas" aria-label="Stereo model viewport"></canvas>
+      </div>
+      <form class="controls" onsubmit="return false">
+         <div class="control">
+            <div class="control-row">
+               <label for="eye-separation">Eye separation</label>
+               <output id="eye-separation-value" for="eye-separation">0.70</output>
+            </div>
+            <input id="eye-separation" type="range" min="0" max="1.5" step="0.01" value="0.7">
+         </div>
+         <div class="control">
+            <div class="control-row">
+               <label for="fov">Field of view</label>
+               <output id="fov-value" for="fov">45 deg</output>
+            </div>
+            <input id="fov" type="range" min="25" max="90" step="1" value="45">
+         </div>
+         <div class="control">
+            <div class="control-row">
+               <label for="near-clipping">Near clipping</label>
+               <output id="near-clipping-value" for="near-clipping">8.0</output>
+            </div>
+            <input id="near-clipping" type="range" min="2" max="12" step="0.1" value="8">
+         </div>
+         <div class="control">
+            <div class="control-row">
+               <label for="convergence">Convergence distance</label>
+               <output id="convergence-value" for="convergence">14.0</output>
+            </div>
+            <input id="convergence" type="range" min="6" max="24" step="0.1" value="14">
+         </div>
+         <p id="camera-status" aria-live="polite">Waiting for webcam stream</p>
+      </form>
+   </section>
+</main>
 </body></html>

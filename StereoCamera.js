@@ -1,49 +1,65 @@
-function StereoCamera(eyeSeparation,
+function StereoCamera(
     convergence,
+    eyeSeparation,
     aspectRatio,
-    FOV,
+    fovDegrees,
     nearClippingDistance,
-    farClippingDistance)
-{
-    this.eyeSeparation = eyeSeparation;
+    farClippingDistance
+) {
     this.convergence = convergence;
-    this.mAspectRatio = aspectRatio;
-    this.FOV = FOV;
+    this.eyeSeparation = eyeSeparation;
+    this.aspectRatio = aspectRatio;
+    this.fovDegrees = fovDegrees;
+    this.FOV = fovDegrees * Math.PI / 180;
     this.nearClippingDistance = nearClippingDistance;
-    this.farClippingDistance = farClippingDistance;  
+    this.farClippingDistance = farClippingDistance;
 
+    this.setAspectRatio = function(aspectRatio) {
+        this.aspectRatio = aspectRatio;
+    };
 
-this.calcLeftFrustum = function()
-{
-    let top, bottom, left, right;
-    top = this.nearClippingDistance * Math.tan(this.FOV / 2);
-    bottom = -top;
+    this.setFovDegrees = function(fovDegrees) {
+        this.fovDegrees = fovDegrees;
+        this.FOV = fovDegrees * Math.PI / 180;
+    };
 
-    let a = this.mAspectRatio * Math.tan(this.FOV / 2) * this.convergence;
-    let b = a - this.eyeSeparation / 2;
-    let c = a + this.eyeSeparation / 2;
+    this.calcFrustum = function(eyeOffset) {
+        let top = this.nearClippingDistance * Math.tan(this.FOV / 2);
+        let bottom = -top;
+        let halfWidthAtConvergence =
+            this.aspectRatio * Math.tan(this.FOV / 2) * this.convergence;
+        let nearScale = this.nearClippingDistance / this.convergence;
 
-    left = -b * this.nearClippingDistance / this.convergence;
-    right = c * this.nearClippingDistance / this.convergence;
+        let left = (-halfWidthAtConvergence + eyeOffset) * nearScale;
+        let right = (halfWidthAtConvergence + eyeOffset) * nearScale;
 
-    return m4.frustum(left, right, bottom, top, this.nearClippingDistance, this.farClippingDistance);
+        return m4.frustum(
+            left,
+            right,
+            bottom,
+            top,
+            this.nearClippingDistance,
+            this.farClippingDistance
+        );
+    };
+
+    this.calcLeftFrustum = function() {
+        return this.calcFrustum(this.eyeSeparation / 2);
+    };
+
+    this.calcRightFrustum = function() {
+        return this.calcFrustum(-this.eyeSeparation / 2);
+    };
+
+    this.calcEyeModelView = function(eyeOffset, modelView) {
+        return m4.multiply(m4.translation(eyeOffset, 0, 0), modelView);
+    };
+
+    this.calcLeftModelView = function(modelView) {
+        return this.calcEyeModelView(this.eyeSeparation / 2, modelView);
+    };
+
+    this.calcRightModelView = function(modelView) {
+        return this.calcEyeModelView(-this.eyeSeparation / 2, modelView);
+    };
 }
-
-this.calcRightFrustum = function()
-{
-    let top, bottom, left, right;
-    top = this.nearClippingDistance * Math.tan(this.FOV / 2);
-    bottom = -top;
-
-    let a = this.mAspectRatio * Math.tan(this.FOV / 2) * this.convergence;
-    let b = a - this.eyeSeparation / 2;
-    let c = a + this.eyeSeparation / 2;
-
-    left = -c * this.nearClippingDistance / this.convergence;
-    right = b * this.nearClippingDistance / this.convergence;
-
-    return m4.frustum(left, right, bottom, top, this.nearClippingDistance, this.farClippingDistance);
-}
-
-}
-
