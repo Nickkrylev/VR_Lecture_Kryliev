@@ -1,0 +1,7 @@
+{
+  "name": "vr-lecture-kryliev",
+  "private": true,
+  "scripts": {
+    "bridge": "node bridge-server.js"
+  }
+}

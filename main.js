@@ -12,6 +12,9 @@ let iTextureWebCam = null;
 
 let video;
 let controls;
+let sensorControls;
+let phoneSensor;
+let phoneSyncEnabled = true;
 
 // Constructor
 function ShaderProgram(name, program) {
@@ -63,9 +66,13 @@ function draw() {
         -surface.center[2]
     );
     let centeredRotation = m4.multiply(centerModel, modelRotation);
+    let phoneRotation = getPhoneRotationMatrix();
     let modelPose = m4.multiply(
-        m4.axisRotation([0.707, 0.707, 0], 0.7),
-        centeredRotation
+        phoneRotation,
+        m4.multiply(
+            m4.axisRotation([0.707, 0.707, 0], 0.7),
+            centeredRotation
+        )
     );
     let modelDepth = getNegativeParallaxModelDepth();
     let modelTransform = m4.multiply(
@@ -140,6 +147,14 @@ function getNegativeParallaxModelDepth() {
 
     return stereoCam.nearClippingDistance +
         Math.max(2, distanceFromNearToConvergence * 0.55);
+}
+
+function getPhoneRotationMatrix() {
+    if (!phoneSyncEnabled || !phoneSensor) {
+        return m4.identity();
+    }
+
+    return phoneSensor.getRelativeMatrix4();
 }
 
 function drawWebCamPlane(calcEyeModelView) {
@@ -294,6 +309,7 @@ function init() {
     }
 
     bindCameraControls();
+    bindSensorControls();
 
     video = document.createElement('video');
     video.autoplay = true;
@@ -365,6 +381,96 @@ function bindCameraControls() {
     updateCameraFromControls();
 }
 
+function bindSensorControls() {
+    sensorControls = {
+        url: document.getElementById("sensor-url"),
+        connect: document.getElementById("sensor-connect"),
+        disconnect: document.getElementById("sensor-disconnect"),
+        calibrate: document.getElementById("sensor-calibrate"),
+        sync: document.getElementById("sensor-sync"),
+        status: document.getElementById("sensor-status"),
+        readings: document.getElementById("sensor-readings")
+    };
+
+    sensorControls.url.value = getDefaultSensorUrl();
+    phoneSyncEnabled = sensorControls.sync.checked;
+    phoneSensor = new PhoneSensorController(updateSensorControls);
+
+    sensorControls.connect.addEventListener("click", function() {
+        let url = normalizeSensorUrl(sensorControls.url.value.trim());
+
+        if (!url) {
+            setSensorStatus("Enter a valid ws:// or wss:// URL");
+            return;
+        }
+
+        sensorControls.url.value = url;
+
+        try {
+            phoneSensor.connect(url);
+        } catch (error) {
+            setSensorStatus("Invalid WebSocket URL");
+        }
+    });
+
+    sensorControls.disconnect.addEventListener("click", function() {
+        phoneSensor.disconnect();
+        draw();
+    });
+
+    sensorControls.calibrate.addEventListener("click", function() {
+        phoneSensor.calibrate();
+        draw();
+    });
+
+    sensorControls.sync.addEventListener("change", function() {
+        phoneSyncEnabled = sensorControls.sync.checked;
+        draw();
+    });
+
+    updateSensorControls(phoneSensor.getSnapshot());
+}
+
+function getDefaultSensorUrl() {
+    let hostname = window.location.hostname || "127.0.0.1";
+    return "ws://" + hostname + ":8091/ws";
+}
+
+function normalizeSensorUrl(rawUrl) {
+    let parsedUrl;
+
+    try {
+        parsedUrl = new URL(rawUrl);
+    } catch (error) {
+        return null;
+    }
+
+    if (parsedUrl.protocol !== "ws:" && parsedUrl.protocol !== "wss:") {
+        return null;
+    }
+
+    if (
+        parsedUrl.pathname === "/" &&
+        !parsedUrl.search &&
+        parsedUrl.port === "8080"
+    ) {
+        parsedUrl.pathname = "/sensor/connect";
+        parsedUrl.search = "?type=android.sensor.game_rotation_vector";
+    }
+
+    return parsedUrl.toString();
+}
+
+function updateSensorControls(snapshot) {
+    sensorControls.connect.disabled = snapshot.active;
+    sensorControls.disconnect.disabled = !snapshot.active;
+    sensorControls.calibrate.disabled = !snapshot.latestPayload;
+
+    setSensorStatus(snapshot.status);
+    setSensorReadings(snapshot.latestPayload);
+    draw();
+}
+
 function updateCameraFromControls() {
     let eyeSeparation = Number(controls.eyeSeparation.value);
     let fov = Number(controls.fov.value);
@@ -389,4 +495,21 @@ function updateCameraFromControls() {
 
 function setCameraStatus(message) {
     document.getElementById("camera-status").textContent = message;
+}
+
+function setSensorStatus(message) {
+    sensorControls.status.textContent = message;
+}
+
+function setSensorReadings(payload) {
+    if (!payload || !Array.isArray(payload.values)) {
+        sensorControls.readings.textContent = "No samples received";
+        return;
+    }
+
+    sensorControls.readings.textContent =
+        "Latest vector: " +
+        payload.values.slice(0, 4).map(function(value) {
+            return Number(value).toFixed(4);
+        }).join(", ");
 }

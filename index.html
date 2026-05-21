@@ -66,6 +66,55 @@
         gap: 8px;
     }
 
+    .control-text {
+        background: #f8f7f4;
+        border: 1px solid #b8c4cc;
+        border-radius: 6px;
+        color: #16212a;
+        font: inherit;
+        padding: 10px 12px;
+        width: 100%;
+    }
+
+    .button-row {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    button {
+        background: #16212a;
+        border: 0;
+        border-radius: 6px;
+        color: #f8f7f4;
+        cursor: pointer;
+        font: inherit;
+        min-height: 38px;
+        padding: 0 12px;
+    }
+
+    button[disabled] {
+        background: #8e9aa2;
+        cursor: default;
+    }
+
+    .checkbox-row {
+        align-items: center;
+        display: flex;
+        gap: 10px;
+    }
+
+    .checkbox-row label {
+        font-weight: 500;
+    }
+
+    .hint {
+        color: #60717e;
+        font-size: 0.8rem;
+        line-height: 1.35;
+        margin: 0;
+    }
+
     .control-row {
         align-items: baseline;
         display: flex;
@@ -79,7 +128,9 @@
     }
 
     output,
-    #camera-status {
+    #camera-status,
+    #sensor-status,
+    #sensor-readings {
         color: #40515d;
         font-size: 0.88rem;
     }
@@ -96,6 +147,13 @@
         margin: 4px 0 0;
         min-height: 2.5em;
         padding-top: 16px;
+    }
+
+    #sensor-status,
+    #sensor-readings {
+        line-height: 1.4;
+        min-height: 1.4em;
+        margin: 0;
     }
 
     @media (max-width: 760px) {
@@ -126,6 +184,7 @@
 <script src="./Model.js"></script>
 <script src="./StereoCamera.js"></script>
 <script src="./Texture.js"></script>
+<script src="./PhoneSensor.js"></script>
 <script src="./main.js"></script>
 
 </head>
@@ -164,6 +223,31 @@
                <output id="convergence-value" for="convergence">14.0</output>
             </div>
             <input id="convergence" type="range" min="6" max="24" step="0.1" value="14">
+         </div>
+         <div class="control">
+            <div class="control-row">
+               <label for="sensor-url">Phone sensor stream</label>
+            </div>
+            <input id="sensor-url" class="control-text" type="text" value="">
+            <p class="hint">Android Sensor Server: <code>ws://PHONE_IP:8080/sensor/connect?type=android.sensor.game_rotation_vector</code></p>
+            <p class="hint">Local bridge: <code>ws://127.0.0.1:8091/ws</code></p>
+         </div>
+         <div class="control">
+            <div class="button-row">
+               <button id="sensor-connect" type="button">Connect</button>
+               <button id="sensor-disconnect" type="button">Disconnect</button>
+               <button id="sensor-calibrate" type="button">Calibrate</button>
+            </div>
+         </div>
+         <div class="control">
+            <div class="checkbox-row">
+               <input id="sensor-sync" type="checkbox" checked>
+               <label for="sensor-sync">Sync model orientation with phone</label>
+            </div>
+         </div>
+         <div class="control">
+            <p id="sensor-status" aria-live="polite">Sensor stream idle</p>
+            <p id="sensor-readings">No samples received</p>
          </div>
          <p id="camera-status" aria-live="polite">Waiting for webcam stream</p>
       </form>
