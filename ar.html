@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Sievert Surface AR</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            background: #000;
+            color: #f3f4ef;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .overlay {
+            left: 0;
+            padding: 16px;
+            pointer-events: none;
+            position: fixed;
+            right: 0;
+            top: 0;
+            z-index: 10;
+        }
+
+        .panel {
+            backdrop-filter: blur(14px);
+            background: rgba(10, 16, 20, 0.68);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            max-width: 420px;
+            padding: 14px 16px;
+        }
+
+        h1 {
+            font-size: 1rem;
+            margin: 0 0 10px;
+        }
+
+        p {
+            font-size: 0.85rem;
+            line-height: 1.45;
+            margin: 0 0 8px;
+        }
+
+        a {
+            color: #cde7ff;
+            pointer-events: auto;
+        }
+    </style>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.8/aframe/build/aframe-ar.js"></script>
+    <script src="./Model.js"></script>
+    <script src="./ARSurface.js"></script>
+</head>
+<body>
+    <div class="overlay">
+        <div class="panel">
+            <h1>Sievert Surface AR</h1>
+            <p>Point the phone camera at the printed custom registration template.</p>
+            <p>Marker template: <a href="./assets/vr-surface-marker-template.svg" target="_blank" rel="noreferrer">open printable SVG</a></p>
+            <p>Custom pattern file expected at <code>assets/vr-surface-marker.patt</code>. Generate it from the SVG with the AR.js marker tool before final recording.</p>
+        </div>
+    </div>
+
+    <a-scene
+        embedded
+        renderer="antialias: true; colorManagement: true;"
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+    >
+        <a-assets></a-assets>
+
+        <a-marker
+            type="pattern"
+            url="./assets/vr-surface-marker.patt"
+            smooth="true"
+            smooth-count="8"
+            smooth-tolerance="0.01"
+            smooth-threshold="2"
+            size="0.16"
+        >
+            <a-entity
+                sievert-surface
+                position="0 0.03 0"
+                rotation="-90 0 0"
+                scale="0.035 0.035 0.035"
+            ></a-entity>
+
+            <a-entity light="type: ambient; intensity: 0.8; color: #ffffff"></a-entity>
+            <a-entity light="type: directional; intensity: 0.9; color: #ffffff" position="1 2 1"></a-entity>
+            <a-plane
+                color="#d9d7ce"
+                height="0.16"
+                material="opacity: 0.22; transparent: true"
+                position="0 0 -0.001"
+                rotation="-90 0 0"
+                width="0.16"
+            ></a-plane>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+</body>
+</html>
