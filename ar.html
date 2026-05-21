@@ -68,9 +68,11 @@
             <p>Open this page on the phone and point the camera at the printed marker image from the AR.js generator.</p>
             <p>Marker template: <a href="./assets/vr-surface-marker-template.svg" target="_blank" rel="noreferrer">open printable SVG</a></p>
             <p>Pattern file in use: <code>assets/vr-surface-marker.patt</code></p>
+            <p>Quick tracking test: <a href="?marker=hiro" rel="noreferrer">open Hiro test mode</a></p>
             <p>Do not print the source SVG directly. Upload the SVG to the AR.js marker generator, then print the marker image that generator downloads.</p>
             <p id="marker-status">Marker status: waiting for camera</p>
             <p id="camera-debug"></p>
+            <p id="marker-debug"></p>
         </div>
     </div>
 
@@ -119,9 +121,21 @@
             let marker = document.getElementById('surface-marker');
             let status = document.getElementById('marker-status');
             let debug = document.getElementById('camera-debug');
+            let markerDebug = document.getElementById('marker-debug');
+            let params = new URLSearchParams(window.location.search);
+            let markerMode = params.get('marker');
 
             function setDebugMessage(message) {
                 debug.textContent = message;
+            }
+
+            if (markerMode === 'hiro') {
+                marker.removeAttribute('type');
+                marker.removeAttribute('url');
+                marker.setAttribute('preset', 'hiro');
+                markerDebug.textContent = 'Marker mode: Hiro preset. Use the standard Hiro marker for tracking verification.';
+            } else {
+                markerDebug.textContent = 'Marker mode: custom pattern. This requires the printed marker image generated from the same SVG as assets/vr-surface-marker.patt.';
             }
 
             if (!window.isSecureContext) {
