@@ -1,9 +1,3 @@
-
-
-function deg2rad(angle) {
-    return angle * Math.PI / 180;
-}
-
 // p: an array of xyz vertex coords
 // t: an array of uv tex coords
 function Vertex(p,t)
@@ -91,52 +85,79 @@ function Model(name) {
     }
 }
 
+function SievertPoint(u, v) {
+    let C = 1.0;
+    let sqrtC = Math.sqrt(C);
+    let sqrtCp1 = Math.sqrt(C + 1.0);
+
+    let sinU = Math.sin(u);
+    let cosU = Math.cos(u);
+    let sinV = Math.sin(v);
+    let cosV = Math.cos(v);
+
+    let denominator = (C + 1.0) - C * sinV * sinV * cosU * cosU;
+    let a = 2.0 / denominator;
+
+    let r =
+        a *
+        Math.sqrt((C + 1.0) * (1.0 + C * sinU * sinU)) *
+        sinV /
+        sqrtC;
+    let phi = -u / sqrtCp1 + Math.atan(Math.tan(u) * sqrtCp1);
+
+    let scale = 0.8;
+    return [
+        scale * r * Math.cos(phi),
+        scale * r * Math.sin(phi),
+        scale * (Math.log(Math.tan(v / 2.0)) + a * (C + 1.0) * cosV) / sqrtC
+    ];
+}
+
+function AddSurfaceTriangle(vertices, triangles, v0, v1, v2) {
+    let triangle = new Triangle(v0, v1, v2);
+    let triangleIndex = triangles.length;
+
+    triangles.push(triangle);
+    vertices[v0].triangles.push(triangleIndex);
+    vertices[v1].triangles.push(triangleIndex);
+    vertices[v2].triangles.push(triangleIndex);
+}
+
 function CreateSurfaceData(data)
 {
     let vertices = [];
     let triangles = [];
 
-    for (let i=0, ang = 0; i<72; i++, ang+=5) {
-        // TODO: replace with your equation
-        vertices.push( new Vertex( [Math.sin(deg2rad(ang)), 0, Math.cos(deg2rad(ang))], [ang/360, 0]  ));
+    let uMin = -1.5;
+    let uMax = 1.5;
+    let vMin = 0.05;
+    let vMax = Math.PI - 0.05;
+    let uSteps = 35;
+    let vSteps = 45;
+    let rowSize = vSteps + 1;
+
+    for (let i = 0; i <= uSteps; i++) {
+        let uRatio = i / uSteps;
+        let u = uMin + (uMax - uMin) * uRatio;
+
+        for (let j = 0; j <= vSteps; j++) {
+            let vRatio = j / vSteps;
+            let v = vMin + (vMax - vMin) * vRatio;
+
+            vertices.push(new Vertex(SievertPoint(u, v), [uRatio, vRatio]));
+        }
     }
 
-    for (let i=0, ang = 0; i<72; i++, ang+=5) {
+    for (let i = 0; i < uSteps; i++) {
+        for (let j = 0; j < vSteps; j++) {
+            let v0 = i * rowSize + j;
+            let v1 = (i + 1) * rowSize + j;
+            let v2 = (i + 1) * rowSize + j + 1;
+            let v3 = i * rowSize + j + 1;
 
-        // TODO: replace with your equation
-        let v0ind = vertices.length;
-        vertices.push( new Vertex( [Math.sin(deg2rad(ang)), 1, Math.cos(deg2rad(ang))], [ang/360, 1]  ));
-
-        // v0    v2 
-        //   o - o
-        //   | \ |
-        //   o - o
-        // v3     v1
-
-        if (i > 0)
-        {
-            let v1ind = v0ind - 72 -1;
-            let v2ind = v0ind - 1;
-            let v3ind = v0ind - 72;
-
-            let trian = new Triangle(v0ind, v1ind, v2ind);
-            let trianInd = triangles.length;
-
-            triangles.push( trian );
-            vertices[v0ind].triangles.push(trianInd);
-            vertices[v1ind].triangles.push(trianInd);
-            vertices[v2ind].triangles.push(trianInd);
-
-            let trian2 = new Triangle(v0ind, v3ind, v1ind);
-            let trianInd2 = triangles.length;
-
-            triangles.push( trian2 );
-            vertices[v0ind].triangles.push(trianInd2);
-            vertices[v3ind].triangles.push(trianInd2);
-            vertices[v1ind].triangles.push(trianInd2);
-
+            AddSurfaceTriangle(vertices, triangles, v0, v1, v2);
+            AddSurfaceTriangle(vertices, triangles, v0, v2, v3);
         }
-
     }
 
     data.verticesF32  = new Float32Array(vertices.length*3);

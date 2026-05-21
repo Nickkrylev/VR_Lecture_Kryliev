@@ -57,10 +57,20 @@ function draw() {
     updateWebCamTexture();
 
     let modelRotation = spaceball.getViewMatrix();
+    let centerModel = m4.translation(
+        -surface.center[0],
+        -surface.center[1],
+        -surface.center[2]
+    );
+    let centeredRotation = m4.multiply(centerModel, modelRotation);
+    let modelPose = m4.multiply(
+        m4.axisRotation([0.707, 0.707, 0], 0.7),
+        centeredRotation
+    );
     let modelDepth = getNegativeParallaxModelDepth();
     let modelTransform = m4.multiply(
         m4.translation(0, 0, -modelDepth),
-        modelRotation
+        modelPose
     );
 
     const colorPolygon = new Float32Array([0.5,0.5,0.5,1]);
@@ -191,7 +201,7 @@ function initGL() {
     
     CreateSurfaceData(data)
 
-    surface = new Model('Surface');
+    surface = new Model('SievertSurface');
     surface.BufferData(data.verticesF32, data.indicesU16, data.texcoordsF32);
 
     surfaceWebCam = new Model('SurfaceWebCam');
