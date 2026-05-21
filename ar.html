@@ -47,6 +47,10 @@
             margin: 0 0 8px;
         }
 
+        code {
+            font-size: 0.82rem;
+        }
+
         a {
             color: #cde7ff;
             pointer-events: auto;
@@ -61,9 +65,12 @@
     <div class="overlay">
         <div class="panel">
             <h1>Sievert Surface AR</h1>
-            <p>Point the phone camera at the printed custom registration template.</p>
+            <p>Open this page on the phone and point the camera at the printed marker image from the AR.js generator.</p>
             <p>Marker template: <a href="./assets/vr-surface-marker-template.svg" target="_blank" rel="noreferrer">open printable SVG</a></p>
-            <p>Custom pattern file expected at <code>assets/vr-surface-marker.patt</code>. Generate it from the SVG with the AR.js marker tool before final recording.</p>
+            <p>Pattern file in use: <code>assets/vr-surface-marker.patt</code></p>
+            <p>Do not print the source SVG directly. Upload the SVG to the AR.js marker generator, then print the marker image that generator downloads.</p>
+            <p id="marker-status">Marker status: waiting for camera</p>
+            <p id="camera-debug"></p>
         </div>
     </div>
 
@@ -76,6 +83,7 @@
         <a-assets></a-assets>
 
         <a-marker
+            id="surface-marker"
             type="pattern"
             url="./assets/vr-surface-marker.patt"
             smooth="true"
@@ -105,5 +113,41 @@
 
         <a-entity camera></a-entity>
     </a-scene>
+
+    <script>
+        (function() {
+            let marker = document.getElementById('surface-marker');
+            let status = document.getElementById('marker-status');
+            let debug = document.getElementById('camera-debug');
+
+            function setDebugMessage(message) {
+                debug.textContent = message;
+            }
+
+            if (!window.isSecureContext) {
+                setDebugMessage('This page is not in a secure context. On iPhone, open it in Safari over HTTPS. Plain http://192.168.x.x will usually fail for camera access.');
+            } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setDebugMessage('Camera API is unavailable in this browser context. Open the page directly in Safari, not inside Telegram or another in-app browser.');
+            } else {
+                setDebugMessage('If the marker stays lost, the camera is working and the next issue is tracking, not permissions.');
+            }
+
+            marker.addEventListener('markerFound', function() {
+                status.textContent = 'Marker status: found';
+            });
+
+            marker.addEventListener('markerLost', function() {
+                status.textContent = 'Marker status: lost';
+            });
+
+            window.addEventListener('camera-error', function(event) {
+                status.textContent = 'Marker status: camera permission failed';
+                let detail = event && event.detail && event.detail.error ? String(event.detail.error) : '';
+                if (detail) {
+                    setDebugMessage('Camera error: ' + detail);
+                }
+            });
+        }());
+    </script>
 </body>
 </html>
