@@ -86,7 +86,7 @@
     <a-scene
         id="ar-scene"
         embedded
-        renderer="antialias: true; colorManagement: true; logarithmicDepthBuffer: true;"
+        renderer="antialias: true; alpha: true; colorManagement: true; logarithmicDepthBuffer: true; precision: mediump;"
         vr-mode-ui="enabled: false"
         arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
     >
@@ -100,12 +100,20 @@
             smooth-tolerance="0.01"
             smooth-threshold="2"
         >
+            <a-plane
+                color="#facc15"
+                height="1"
+                material="opacity: 0.74; transparent: true; side: double"
+                position="0 0.01 0"
+                rotation="-90 0 0"
+                width="1"
+            ></a-plane>
             <a-box
                 color="#ff5a5f"
-                depth="0.4"
-                height="0.4"
-                position="0 0.25 0"
-                width="0.4"
+                depth="0.6"
+                height="0.6"
+                position="0 0.32 0"
+                width="0.6"
             ></a-box>
             <a-text
                 align="center"
