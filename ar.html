@@ -18,42 +18,56 @@
         }
 
         .overlay {
-            left: 0;
-            padding: 16px;
-            pointer-events: none;
+            left: env(safe-area-inset-left);
+            padding: 12px;
             position: fixed;
-            right: 0;
-            top: 0;
+            right: env(safe-area-inset-right);
+            top: env(safe-area-inset-top);
             z-index: 10;
         }
 
-        .panel {
+        .status {
+            align-items: center;
             backdrop-filter: blur(14px);
-            background: rgba(10, 16, 20, 0.68);
+            background: rgba(10, 16, 20, 0.72);
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 8px;
-            max-width: 420px;
-            padding: 14px 16px;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            max-width: min(420px, calc(100vw - 24px));
+            padding: 9px 10px 9px 12px;
+            transition: opacity 180ms ease, transform 180ms ease;
         }
 
-        h1 {
+        .status.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-12px);
+        }
+
+        .status.error {
+            background: rgba(56, 13, 17, 0.86);
+        }
+
+        .status-message {
+            font-size: 0.84rem;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        .status-close {
+            appearance: none;
+            background: rgba(255, 255, 255, 0.14);
+            border: 0;
+            border-radius: 6px;
+            color: #f3f4ef;
+            flex: 0 0 28px;
             font-size: 1rem;
-            margin: 0 0 10px;
-        }
-
-        p {
-            font-size: 0.85rem;
-            line-height: 1.45;
-            margin: 0 0 8px;
-        }
-
-        code {
-            font-size: 0.82rem;
-        }
-
-        a {
-            color: #cde7ff;
-            pointer-events: auto;
+            height: 28px;
+            line-height: 1;
+            padding: 0;
+            width: 28px;
         }
     </style>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
@@ -63,16 +77,9 @@
 </head>
 <body>
     <div class="overlay">
-        <div class="panel">
-            <h1>Sievert Surface AR</h1>
-            <p>Open this page on the phone in Safari. This scene supports both the standard Hiro marker and your custom pattern marker.</p>
-            <p>Marker template: <a href="./assets/vr-surface-marker-template.svg" target="_blank" rel="noreferrer">open printable SVG</a></p>
-            <p>Pattern file in use: <code>assets/vr-surface-marker.patt</code></p>
-            <p>Hiro test image: <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noreferrer">open Hiro marker</a></p>
-            <p>Do not print the source SVG directly. Upload the SVG to the AR.js marker generator, then print the marker image that generator downloads.</p>
-            <p id="marker-status">Marker status: loading scene</p>
-            <p id="camera-debug"></p>
-            <p id="marker-debug"></p>
+        <div id="ar-status" class="status">
+            <p id="marker-status" class="status-message">Starting camera...</p>
+            <button id="status-close" class="status-close" type="button" aria-label="Hide status">&times;</button>
         </div>
     </div>
 
@@ -154,56 +161,68 @@
             let scene = document.getElementById('ar-scene');
             let hiroMarker = document.getElementById('hiro-marker');
             let surfaceMarker = document.getElementById('surface-marker');
+            let statusPanel = document.getElementById('ar-status');
             let status = document.getElementById('marker-status');
-            let debug = document.getElementById('camera-debug');
-            let markerDebug = document.getElementById('marker-debug');
+            let statusClose = document.getElementById('status-close');
             let activeMarkers = new Set();
+            let hideTimer = null;
 
-            function setDebugMessage(message) {
-                debug.textContent = message;
+            function setMarkerStatus(message, kind) {
+                clearTimeout(hideTimer);
+                statusPanel.classList.remove('hidden', 'error');
+                status.textContent = message;
+
+                if (kind === 'error') {
+                    statusPanel.classList.add('error');
+                }
             }
 
-            function setMarkerStatus(message) {
-                status.textContent = message;
+            function hideStatusSoon() {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(function() {
+                    statusPanel.classList.add('hidden');
+                }, 1600);
             }
 
             function refreshMarkerStatus() {
                 if (activeMarkers.size === 0) {
-                    setMarkerStatus('Marker status: camera ready, scanning for Hiro or custom marker');
+                    setMarkerStatus('Point the camera at the marker.');
+                    hideStatusSoon();
                     return;
                 }
 
                 if (activeMarkers.has('hiro') && activeMarkers.has('custom')) {
-                    setMarkerStatus('Marker status: Hiro and custom pattern detected');
+                    setMarkerStatus('Markers detected.');
+                    hideStatusSoon();
                     return;
                 }
 
                 if (activeMarkers.has('hiro')) {
-                    setMarkerStatus('Marker status: Hiro marker detected');
+                    setMarkerStatus('Hiro marker detected.');
+                    hideStatusSoon();
                     return;
                 }
 
                 if (activeMarkers.has('custom')) {
-                    setMarkerStatus('Marker status: custom pattern detected');
+                    setMarkerStatus('Marker detected.');
+                    hideStatusSoon();
                 }
             }
 
             if (!window.isSecureContext) {
-                setDebugMessage('This page is not in a secure context. On iPhone, open it in Safari over HTTPS. Plain http://192.168.x.x will usually fail for camera access.');
+                setMarkerStatus('Open this AR page over HTTPS in Safari.', 'error');
             } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                setDebugMessage('Camera API is unavailable in this browser context. Open the page directly in Safari, not inside Telegram or another in-app browser.');
-            } else {
-                setDebugMessage('If no marker is detected, try the Hiro marker first. If Hiro works and custom does not, the issue is your generated pattern marker.');
+                setMarkerStatus('Camera API is unavailable here. Open the page in Safari.', 'error');
             }
 
-            markerDebug.textContent = 'Supported markers: Hiro preset and custom pattern from assets/vr-surface-marker.patt.';
-
             scene.addEventListener('loaded', function() {
-                setMarkerStatus('Marker status: scene loaded, waiting for camera');
+                setMarkerStatus('Starting camera...');
+                hideStatusSoon();
             });
 
             window.addEventListener('camera-init', function() {
-                setMarkerStatus('Marker status: camera ready, scanning for Hiro or custom marker');
+                setMarkerStatus('Point the camera at the marker.');
+                hideStatusSoon();
             });
 
             hiroMarker.addEventListener('markerFound', function() {
@@ -227,11 +246,16 @@
             });
 
             window.addEventListener('camera-error', function(event) {
-                setMarkerStatus('Marker status: camera permission failed');
+                let message = 'Camera permission failed.';
                 let detail = event && event.detail && event.detail.error ? String(event.detail.error) : '';
                 if (detail) {
-                    setDebugMessage('Camera error: ' + detail);
+                    message += ' ' + detail;
                 }
+                setMarkerStatus(message, 'error');
+            });
+
+            statusClose.addEventListener('click', function() {
+                statusPanel.classList.add('hidden');
             });
         }());
     </script>
