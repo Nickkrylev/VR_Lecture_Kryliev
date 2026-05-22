@@ -3,77 +3,66 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>PA3/PA4 - AR Surface 16</title>
+    <title>Surface Demo</title>
     <style>
-        body {
+        html, body {
+            height: 100%;
             margin: 0;
             overflow: hidden;
         }
 
-        #debug-status {
-            background: rgba(0, 0, 0, 0.72);
-            color: #fff;
-            display: none;
-            font: 16px Arial, sans-serif;
-            left: 12px;
-            max-width: calc(100vw - 24px);
-            padding: 10px 12px;
+        body {
+            background: #0b0f14;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .overlay {
+            color: #e8edf2;
+            left: 0;
+            padding: 16px 18px;
+            pointer-events: none;
             position: fixed;
-            top: 12px;
+            right: 0;
+            top: 0;
             z-index: 10;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 6px;
+        }
+
+        .subtitle {
+            color: #a9b4bf;
+            font-size: 13px;
+            margin: 0;
         }
     </style>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.8/aframe/build/aframe-ar.js"></script>
     <script src="./ar-surface-component.js"></script>
 </head>
 <body>
-    <div id="debug-status">Loading AR scene...</div>
+    <div class="overlay">
+        <p class="title">Surface Demo</p>
+        <p class="subtitle">The figure is shown immediately without camera or marker tracking.</p>
+    </div>
+
     <a-scene
+        background="color: #0b0f14"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false;"
         loading-screen="enabled: false;"
-        renderer="logarithmicDepthBuffer: true;"
+        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false;"
     >
-        <a-marker id="surface-marker" type="pattern" url="./vr-surface-marker.patt">
-            <a-entity surface-16 position="0 0.5 0" scale="1 1 1"></a-entity>
-        </a-marker>
-        <a-entity camera></a-entity>
+        <a-entity position="0 0 4.5">
+            <a-entity camera look-controls="enabled: false" wasd-controls="enabled: false"></a-entity>
+        </a-entity>
+
+        <a-entity light="type: ambient; intensity: 0.9; color: #ffffff"></a-entity>
+        <a-entity light="type: directional; intensity: 0.95; color: #ffffff" position="1.5 2.2 2.5"></a-entity>
+        <a-entity light="type: directional; intensity: 0.35; color: #7dd3fc" position="-2 1 -1"></a-entity>
+
+        <a-entity surface-16 position="0 0 0"></a-entity>
     </a-scene>
-    <script>
-        (function() {
-            let params = new URLSearchParams(window.location.search);
-            if (params.get('debug') !== '1') {
-                return;
-            }
-
-            let status = document.getElementById('debug-status');
-            let marker = document.getElementById('surface-marker');
-
-            function setStatus(message) {
-                status.style.display = 'block';
-                status.textContent = message;
-            }
-
-            setStatus('Opening camera...');
-
-            window.addEventListener('camera-init', function() {
-                setStatus('Camera ready. Point at vr-surface-marker.png.');
-            });
-
-            window.addEventListener('camera-error', function(event) {
-                let detail = event && event.detail && event.detail.error ? String(event.detail.error) : '';
-                setStatus(detail ? 'Camera error: ' + detail : 'Camera error.');
-            });
-
-            marker.addEventListener('markerFound', function() {
-                setStatus('Marker found.');
-            });
-
-            marker.addEventListener('markerLost', function() {
-                setStatus('Marker lost.');
-            });
-        }());
-    </script>
 </body>
 </html>
