@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Surface Demo</title>
+    <title>Surface Camera Demo</title>
     <style>
         html, body {
             height: 100%;
@@ -17,52 +17,92 @@
         }
 
         .overlay {
-            color: #e8edf2;
             left: 0;
-            padding: 16px 18px;
-            pointer-events: none;
+            padding: 14px 16px;
             position: fixed;
             right: 0;
             top: 0;
             z-index: 10;
         }
 
-        .title {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 6px;
+        .status {
+            background: rgba(8, 12, 16, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            color: #e8edf2;
+            display: inline-block;
+            font-size: 14px;
+            line-height: 1.35;
+            margin: 0;
+            max-width: calc(100vw - 32px);
+            padding: 9px 12px;
+            transition: opacity 180ms ease;
         }
 
-        .subtitle {
-            color: #a9b4bf;
-            font-size: 13px;
-            margin: 0;
+        .status.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .status.error {
+            background: rgba(72, 18, 18, 0.82);
         }
     </style>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.8/aframe/build/aframe-ar.js"></script>
     <script src="./ar-surface-component.js"></script>
 </head>
 <body>
     <div class="overlay">
-        <p class="title">Surface Demo</p>
-        <p class="subtitle">The figure is shown immediately without camera or marker tracking.</p>
+        <p id="status" class="status">Opening camera...</p>
     </div>
 
     <a-scene
-        background="color: #0b0f14"
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
         embedded
         loading-screen="enabled: false;"
-        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false;"
+        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false; logarithmicDepthBuffer: true;"
     >
-        <a-entity position="0 0 4.5">
-            <a-entity camera look-controls="enabled: false" wasd-controls="enabled: false"></a-entity>
-        </a-entity>
-
         <a-entity light="type: ambient; intensity: 0.9; color: #ffffff"></a-entity>
         <a-entity light="type: directional; intensity: 0.95; color: #ffffff" position="1.5 2.2 2.5"></a-entity>
         <a-entity light="type: directional; intensity: 0.35; color: #7dd3fc" position="-2 1 -1"></a-entity>
 
-        <a-entity surface-16 position="0 0 0"></a-entity>
+        <a-entity camera look-controls="enabled: false">
+            <a-entity surface-16 position="0 -0.15 -2.2" scale="0.58 0.58 0.58"></a-entity>
+        </a-entity>
     </a-scene>
+
+    <script>
+        (function() {
+            const status = document.getElementById('status');
+            let hideTimer = null;
+
+            function setStatus(message, isError) {
+                clearTimeout(hideTimer);
+                status.textContent = message;
+                status.classList.remove('hidden', 'error');
+                if (isError) {
+                    status.classList.add('error');
+                }
+            }
+
+            function hideSoon() {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(function() {
+                    status.classList.add('hidden');
+                }, 1600);
+            }
+
+            window.addEventListener('camera-init', function() {
+                setStatus('Camera ready. Figure shown in demo mode.', false);
+                hideSoon();
+            });
+
+            window.addEventListener('camera-error', function(event) {
+                const detail = event && event.detail && event.detail.error ? String(event.detail.error) : '';
+                setStatus(detail ? 'Camera error: ' + detail : 'Camera error.', true);
+            });
+        }());
+    </script>
 </body>
 </html>
