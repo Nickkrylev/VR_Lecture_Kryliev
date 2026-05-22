@@ -1,4 +1,15 @@
-# Methods-of-synthesis-of-virtual-reality
+# Methods of Synthesis of Virtual Reality — Control Task
 
+## AR registration template
 
-[View website](https://karkuh.github.io/Methods-of-synthesis-of-virtual-reality/)
+This branch implements the **Control task (AR registration template)** for **variant 18**.
+
+Open on the laptop:
+
+```text
+http://localhost:8000/marker.html
+```
+
+```text
+https://YuliiaIvakhnenko.github.io/Methods-of-synthesis-of-virtual-reality/
+```
