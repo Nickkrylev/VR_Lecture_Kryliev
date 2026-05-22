@@ -62,23 +62,45 @@ AFRAME.registerComponent('sievert-surface', {
         bounds.getCenter(center);
         geometry.translate(-center.x, -center.y, -center.z);
 
-        let fillMaterial = new THREE.MeshStandardMaterial({
-            color: '#b9c5c0',
-            metalness: 0.05,
-            roughness: 0.72,
-            side: THREE.DoubleSide
+        let size = new THREE.Vector3();
+        bounds.getSize(size);
+        let maxDimension = Math.max(size.x, size.y, size.z);
+        let scaleFactor = maxDimension > 0 ? 0.95 / maxDimension : 1;
+        geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+
+        let container = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshNormalMaterial({
+                opacity: 0.12,
+                side: THREE.BackSide,
+                transparent: true
+            })
+        );
+
+        let fillMaterial = new THREE.MeshNormalMaterial({
+            opacity: 0.36,
+            side: THREE.DoubleSide,
+            transparent: true
         });
 
         let mesh = new THREE.Mesh(geometry, fillMaterial);
 
-        let wireframe = new THREE.LineSegments(
-            new THREE.WireframeGeometry(geometry),
-            new THREE.LineBasicMaterial({ color: '#ffffff' })
+        let wireframe = new THREE.Mesh(
+            geometry,
+            new THREE.MeshBasicMaterial({
+                color: '#ff9900',
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.94,
+                wireframe: true
+            })
         );
 
         let group = new THREE.Group();
         group.add(mesh);
         group.add(wireframe);
+        group.rotation.x = 1;
+        this.el.setObject3D('container', container);
         this.el.setObject3D('mesh', group);
     }
 });

@@ -70,7 +70,7 @@
             width: 28px;
         }
     </style>
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.8/aframe/build/aframe-ar.js"></script>
     <script src="./Model.js"></script>
     <script src="./ARSurface.js"></script>
@@ -86,79 +86,20 @@
     <a-scene
         id="ar-scene"
         embedded
-        renderer="antialias: true; alpha: true; colorManagement: true; logarithmicDepthBuffer: true; precision: mediump;"
+        renderer="logarithmicDepthBuffer: true;"
         vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
+        arjs="sourceType: webcam; debugUIEnabled: false;"
     >
-        <a-assets></a-assets>
-
-        <a-marker
-            id="hiro-marker"
-            preset="hiro"
-            smooth="true"
-            smooth-count="8"
-            smooth-tolerance="0.01"
-            smooth-threshold="2"
-        >
-            <a-plane
-                color="#facc15"
-                height="1"
-                material="opacity: 0.74; transparent: true; side: double"
-                position="0 0.01 0"
-                rotation="-90 0 0"
-                width="1"
-            ></a-plane>
-            <a-box
-                color="#ff5a5f"
-                depth="0.6"
-                height="0.6"
-                position="0 0.32 0"
-                width="0.6"
-            ></a-box>
-            <a-text
-                align="center"
-                color="#ffffff"
-                position="0 0.65 0"
-                scale="0.8 0.8 0.8"
-                value="HIRO OK"
-            ></a-text>
-        </a-marker>
-
         <a-marker
             id="surface-marker"
             type="pattern"
             url="./assets/vr-surface-marker.patt"
-            smooth="true"
-            smooth-count="8"
-            smooth-tolerance="0.01"
-            smooth-threshold="2"
-            size="0.16"
         >
-            <a-box
-                color="#2dd4bf"
-                depth="0.22"
-                height="0.22"
-                opacity="0.5"
-                position="0 0.12 0"
-                width="0.22"
-            ></a-box>
             <a-entity
                 sievert-surface
-                position="0 0.18 0"
-                rotation="-90 0 0"
-                scale="0.05 0.05 0.05"
+                position="0 0.5 0"
+                scale="1 1 1"
             ></a-entity>
-
-            <a-entity light="type: ambient; intensity: 0.8; color: #ffffff"></a-entity>
-            <a-entity light="type: directional; intensity: 0.9; color: #ffffff" position="1 2 1"></a-entity>
-            <a-plane
-                color="#d9d7ce"
-                height="0.16"
-                material="opacity: 0.22; transparent: true"
-                position="0 0 -0.001"
-                rotation="-90 0 0"
-                width="0.16"
-            ></a-plane>
         </a-marker>
 
         <a-entity camera></a-entity>
@@ -167,7 +108,6 @@
     <script>
         (function() {
             let scene = document.getElementById('ar-scene');
-            let hiroMarker = document.getElementById('hiro-marker');
             let surfaceMarker = document.getElementById('surface-marker');
             let statusPanel = document.getElementById('ar-status');
             let status = document.getElementById('marker-status');
@@ -199,18 +139,6 @@
                     return;
                 }
 
-                if (activeMarkers.has('hiro') && activeMarkers.has('custom')) {
-                    setMarkerStatus('Markers detected.');
-                    hideStatusSoon();
-                    return;
-                }
-
-                if (activeMarkers.has('hiro')) {
-                    setMarkerStatus('Hiro marker detected.');
-                    hideStatusSoon();
-                    return;
-                }
-
                 if (activeMarkers.has('custom')) {
                     setMarkerStatus('Marker detected.');
                     hideStatusSoon();
@@ -231,16 +159,6 @@
             window.addEventListener('camera-init', function() {
                 setMarkerStatus('Point the camera at the marker.');
                 hideStatusSoon();
-            });
-
-            hiroMarker.addEventListener('markerFound', function() {
-                activeMarkers.add('hiro');
-                refreshMarkerStatus();
-            });
-
-            hiroMarker.addEventListener('markerLost', function() {
-                activeMarkers.delete('hiro');
-                refreshMarkerStatus();
             });
 
             surfaceMarker.addEventListener('markerFound', function() {
