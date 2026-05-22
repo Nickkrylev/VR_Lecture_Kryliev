@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Sievert Surface AR Debug</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #status {
+            background: rgba(0, 0, 0, 0.72);
+            color: #fff;
+            font: 16px Arial, sans-serif;
+            left: 12px;
+            padding: 10px 12px;
+            position: fixed;
+            top: 12px;
+            z-index: 10;
+        }
+    </style>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.8/aframe/build/aframe-ar.js"></script>
+    <script src="./ARSurface.js"></script>
+</head>
+<body>
+    <div id="status">Waiting for camera and marker...</div>
+    <a-scene
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false;"
+        loading-screen="enabled: false;"
+        renderer="logarithmicDepthBuffer: true;"
+    >
+        <a-marker id="surface-marker" type="pattern" url="./assets/vr-surface-marker.patt">
+            <a-box material="color: #00ff88; shader: flat" position="0 0.5 0" scale="0.3 0.3 0.3"></a-box>
+            <a-entity sievert-surface position="0 0.5 0" scale="1 1 1"></a-entity>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+    <script>
+        (function() {
+            let status = document.getElementById('status');
+            let marker = document.getElementById('surface-marker');
+
+            window.addEventListener('camera-init', function() {
+                status.textContent = 'Camera ready. Point at marker.html.';
+            });
+
+            window.addEventListener('camera-error', function() {
+                status.textContent = 'Camera error. Open this page in Safari over HTTPS.';
+            });
+
+            marker.addEventListener('markerFound', function() {
+                status.textContent = 'Marker found.';
+            });
+
+            marker.addEventListener('markerLost', function() {
+                status.textContent = 'Marker lost.';
+            });
+        }());
+    </script>
+</body>
+</html>
