@@ -4,186 +4,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Sievert Surface AR</title>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        body {
-            background: #000;
-            color: #f3f4ef;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        .overlay {
-            left: env(safe-area-inset-left);
-            padding: 12px;
-            position: fixed;
-            right: env(safe-area-inset-right);
-            top: env(safe-area-inset-top);
-            z-index: 10;
-        }
-
-        .status {
-            align-items: center;
-            backdrop-filter: blur(14px);
-            background: rgba(10, 16, 20, 0.72);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            border-radius: 8px;
-            display: flex;
-            gap: 10px;
-            justify-content: space-between;
-            max-width: min(420px, calc(100vw - 24px));
-            padding: 9px 10px 9px 12px;
-            transition: opacity 180ms ease, transform 180ms ease;
-        }
-
-        .status.hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(-12px);
-        }
-
-        .status.error {
-            background: rgba(56, 13, 17, 0.86);
-        }
-
-        .status-message {
-            font-size: 0.84rem;
-            line-height: 1.3;
-            margin: 0;
-        }
-
-        .status-close {
-            appearance: none;
-            background: rgba(255, 255, 255, 0.14);
-            border: 0;
-            border-radius: 6px;
-            color: #f3f4ef;
-            flex: 0 0 28px;
-            font-size: 1rem;
-            height: 28px;
-            line-height: 1;
-            padding: 0;
-            width: 28px;
-        }
-    </style>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.8/aframe/build/aframe-ar.js"></script>
-    <script src="./Model.js"></script>
     <script src="./ARSurface.js"></script>
 </head>
-<body>
-    <div class="overlay">
-        <div id="ar-status" class="status">
-            <p id="marker-status" class="status-message">Starting camera...</p>
-            <button id="status-close" class="status-close" type="button" aria-label="Hide status">&times;</button>
-        </div>
-    </div>
-
+<body style="margin: 0; overflow: hidden;">
     <a-scene
-        id="ar-scene"
         embedded
-        renderer="logarithmicDepthBuffer: true;"
-        vr-mode-ui="enabled: false"
         arjs="sourceType: webcam; debugUIEnabled: false;"
+        renderer="logarithmicDepthBuffer: true;"
     >
-        <a-marker
-            id="surface-marker"
-            type="pattern"
-            url="./assets/vr-surface-marker.patt"
-        >
-            <a-entity
-                sievert-surface
-                position="0 0.5 0"
-                scale="1 1 1"
-            ></a-entity>
+        <a-marker type="pattern" url="./assets/vr-surface-marker.patt">
+            <a-entity sievert-surface position="0 0.5 0" scale="1 1 1"></a-entity>
         </a-marker>
-
         <a-entity camera></a-entity>
     </a-scene>
-
-    <script>
-        (function() {
-            let scene = document.getElementById('ar-scene');
-            let surfaceMarker = document.getElementById('surface-marker');
-            let statusPanel = document.getElementById('ar-status');
-            let status = document.getElementById('marker-status');
-            let statusClose = document.getElementById('status-close');
-            let activeMarkers = new Set();
-            let hideTimer = null;
-
-            function setMarkerStatus(message, kind) {
-                clearTimeout(hideTimer);
-                statusPanel.classList.remove('hidden', 'error');
-                status.textContent = message;
-
-                if (kind === 'error') {
-                    statusPanel.classList.add('error');
-                }
-            }
-
-            function hideStatusSoon() {
-                clearTimeout(hideTimer);
-                hideTimer = setTimeout(function() {
-                    statusPanel.classList.add('hidden');
-                }, 1600);
-            }
-
-            function refreshMarkerStatus() {
-                if (activeMarkers.size === 0) {
-                    setMarkerStatus('Point the camera at the marker.');
-                    hideStatusSoon();
-                    return;
-                }
-
-                if (activeMarkers.has('custom')) {
-                    setMarkerStatus('Marker detected.');
-                    hideStatusSoon();
-                }
-            }
-
-            if (!window.isSecureContext) {
-                setMarkerStatus('Open this AR page over HTTPS in Safari.', 'error');
-            } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                setMarkerStatus('Camera API is unavailable here. Open the page in Safari.', 'error');
-            }
-
-            scene.addEventListener('loaded', function() {
-                setMarkerStatus('Starting camera...');
-                hideStatusSoon();
-            });
-
-            window.addEventListener('camera-init', function() {
-                setMarkerStatus('Point the camera at the marker.');
-                hideStatusSoon();
-            });
-
-            surfaceMarker.addEventListener('markerFound', function() {
-                activeMarkers.add('custom');
-                refreshMarkerStatus();
-            });
-
-            surfaceMarker.addEventListener('markerLost', function() {
-                activeMarkers.delete('custom');
-                refreshMarkerStatus();
-            });
-
-            window.addEventListener('camera-error', function(event) {
-                let message = 'Camera permission failed.';
-                let detail = event && event.detail && event.detail.error ? String(event.detail.error) : '';
-                if (detail) {
-                    message += ' ' + detail;
-                }
-                setMarkerStatus(message, 'error');
-            });
-
-            statusClose.addEventListener('click', function() {
-                statusPanel.classList.add('hidden');
-            });
-        }());
-    </script>
 </body>
 </html>

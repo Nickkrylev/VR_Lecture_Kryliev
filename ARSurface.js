@@ -1,6 +1,51 @@
+AFRAME.registerComponent('sievert-surface', {
+    init: function() {
+        let element = this.el;
+        let geometry = createSievertGeometry();
+
+        let containerGeometry = new THREE.BoxGeometry(1, 1, 1);
+        let containerMaterial = new THREE.MeshNormalMaterial({
+            opacity: 0.2,
+            side: THREE.BackSide,
+            transparent: true
+        });
+        let container = new THREE.Mesh(containerGeometry, containerMaterial);
+        element.setObject3D('container', container);
+
+        geometry.computeBoundingBox();
+
+        let center = new THREE.Vector3();
+        geometry.boundingBox.getCenter(center);
+        geometry.translate(-center.x, -center.y, -center.z);
+
+        let size = new THREE.Vector3();
+        geometry.boundingBox.getSize(size);
+        let maxDimension = Math.max(size.x, size.y, size.z);
+        let scaleFactor = maxDimension > 0 ? 0.95 / maxDimension : 1;
+        geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+
+        let material = new THREE.MeshPhongMaterial({
+            color: 0xff9900,
+            opacity: 0.8,
+            side: THREE.DoubleSide,
+            transparent: true,
+            wireframe: true
+        });
+
+        this.surfaceMesh = new THREE.Mesh(geometry, material);
+        this.surfaceMesh.rotation.x = 1;
+        element.setObject3D('mesh', this.surfaceMesh);
+    },
+
+    tick: function() {
+        if (this.surfaceMesh) {
+            this.surfaceMesh.rotation.y += 0.01;
+        }
+    }
+});
+
 function createSievertGeometry() {
     let vertices = [];
-    let uvs = [];
     let indices = [];
 
     let uMin = -1.5;
@@ -12,28 +57,24 @@ function createSievertGeometry() {
     let rowSize = vSteps + 1;
 
     for (let i = 0; i <= uSteps; i++) {
-        let uRatio = i / uSteps;
-        let u = uMin + (uMax - uMin) * uRatio;
+        let u = uMin + (uMax - uMin) * i / uSteps;
 
         for (let j = 0; j <= vSteps; j++) {
-            let vRatio = j / vSteps;
-            let v = vMin + (vMax - vMin) * vRatio;
-            let point = SievertPoint(u, v);
-
+            let v = vMin + (vMax - vMin) * j / vSteps;
+            let point = sievertPoint(u, v);
             vertices.push(point[0], point[1], point[2]);
-            uvs.push(uRatio, vRatio);
         }
     }
 
     for (let i = 0; i < uSteps; i++) {
         for (let j = 0; j < vSteps; j++) {
-            let v0 = i * rowSize + j;
-            let v1 = (i + 1) * rowSize + j;
-            let v2 = (i + 1) * rowSize + j + 1;
-            let v3 = i * rowSize + j + 1;
+            let index = i * rowSize + j;
+            let nextU = (i + 1) * rowSize + j;
+            let nextV = i * rowSize + j + 1;
+            let diagonal = (i + 1) * rowSize + j + 1;
 
-            indices.push(v0, v1, v2);
-            indices.push(v0, v2, v3);
+            indices.push(index, nextU, diagonal);
+            indices.push(index, diagonal, nextV);
         }
     }
 
@@ -42,65 +83,39 @@ function createSievertGeometry() {
         'position',
         new THREE.Float32BufferAttribute(vertices, 3)
     );
-    geometry.setAttribute(
-        'uv',
-        new THREE.Float32BufferAttribute(uvs, 2)
-    );
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
 
     return geometry;
 }
 
-AFRAME.registerComponent('sievert-surface', {
-    init: function() {
-        let geometry = createSievertGeometry();
-        geometry.computeBoundingBox();
+function sievertPoint(u, v) {
+    let c = 1.0;
+    let sqrtC = Math.sqrt(c);
+    let sqrtCp1 = Math.sqrt(c + 1.0);
 
-        let bounds = geometry.boundingBox;
-        let center = new THREE.Vector3();
-        bounds.getCenter(center);
-        geometry.translate(-center.x, -center.y, -center.z);
+    let sinU = Math.sin(u);
+    let cosU = Math.cos(u);
+    let sinV = Math.sin(v);
+    let cosV = Math.cos(v);
 
-        let size = new THREE.Vector3();
-        bounds.getSize(size);
-        let maxDimension = Math.max(size.x, size.y, size.z);
-        let scaleFactor = maxDimension > 0 ? 0.95 / maxDimension : 1;
-        geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+    let denominator = (c + 1.0) - c * sinV * sinV * cosU * cosU;
+    let a = 2.0 / denominator;
 
-        let container = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshNormalMaterial({
-                opacity: 0.12,
-                side: THREE.BackSide,
-                transparent: true
-            })
-        );
+    let radius = (
+        a *
+        Math.sqrt((c + 1.0) * (1.0 + c * sinU * sinU)) *
+        sinV
+    ) / sqrtC;
+    let phi = -u / sqrtCp1 + Math.atan(Math.tan(u) * sqrtCp1);
 
-        let fillMaterial = new THREE.MeshNormalMaterial({
-            opacity: 0.36,
-            side: THREE.DoubleSide,
-            transparent: true
-        });
-
-        let mesh = new THREE.Mesh(geometry, fillMaterial);
-
-        let wireframe = new THREE.Mesh(
-            geometry,
-            new THREE.MeshBasicMaterial({
-                color: '#ff9900',
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.94,
-                wireframe: true
-            })
-        );
-
-        let group = new THREE.Group();
-        group.add(mesh);
-        group.add(wireframe);
-        group.rotation.x = 1;
-        this.el.setObject3D('container', container);
-        this.el.setObject3D('mesh', group);
-    }
-});
+    let scale = 0.8;
+    return [
+        scale * radius * Math.cos(phi),
+        scale * radius * Math.sin(phi),
+        scale * (
+            Math.log(Math.tan(v / 2.0)) +
+            a * (c + 1.0) * cosV
+        ) / sqrtC
+    ];
+}
